@@ -31,6 +31,9 @@ export default function LocationSelector() {
     let map: import("leaflet").Map | undefined;
     let mapElement: HTMLElement | undefined;
     const preventTouchMove = (event: TouchEvent) => event.preventDefault();
+    const preventPointerMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") event.preventDefault();
+    };
 
     import("leaflet").then((leaflet) => {
       if (disposed || !mapRef.current) return;
@@ -53,7 +56,11 @@ export default function LocationSelector() {
       map.keyboard.disable();
       mapElement = map.getContainer();
       mapElement.style.touchAction = "none";
+      mapElement.style.overscrollBehavior = "none";
+      mapElement.addEventListener("touchstart", preventTouchMove, { passive: false });
       mapElement.addEventListener("touchmove", preventTouchMove, { passive: false });
+      mapElement.addEventListener("pointermove", preventPointerMove, { passive: false });
+      map.on("movestart", () => map?.stop());
       leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(map);
@@ -95,6 +102,8 @@ export default function LocationSelector() {
       disposed = true;
       map?.remove();
       mapElement?.removeEventListener("touchmove", preventTouchMove);
+      mapElement?.removeEventListener("touchstart", preventTouchMove);
+      mapElement?.removeEventListener("pointermove", preventPointerMove);
       mapInstanceRef.current = undefined;
       pinRef.current = undefined;
     };
