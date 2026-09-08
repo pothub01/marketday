@@ -43,7 +43,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
         container: mapRef.current,
         center: [longitude, latitude],
         zoom: coordinatesRef.current ? 15 : 12,
-        interactive: false,
+        interactive: true,
         attributionControl: { compact: true },
         style: {
           version: 8,
@@ -54,10 +54,6 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
       const marker = new maplibre.Marker({ element: markerElement, anchor: "bottom" }).setLngLat([longitude, latitude]).addTo(map);
       mapInstanceRef.current = map;
       markerRef.current = marker;
-      const mapElement = map.getContainer();
-      mapElement.style.touchAction = "none";
-      mapElement.style.overscrollBehavior = "none";
-      mapElement.addEventListener("touchmove", (event) => event.preventDefault(), { passive: false });
       map.once("load", () => map?.resize());
       map.on("click", async (event) => {
         const value = `${event.lngLat.lat.toFixed(5)},${event.lngLat.lng.toFixed(5)}`;
@@ -165,6 +161,13 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     setOpen(false);
   }
 
+  function zoomMap(direction: "in" | "out") {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    if (direction === "in") map.zoomIn({ duration: 180 });
+    else map.zoomOut({ duration: 180 });
+  }
+
   if (!allowMap) {
     return <div className="location-picker header-location-picker">
       <div className="location header-location" title={confirmed ? (address || location) : "Default delivery address"} aria-label={confirmed ? `Recent delivery location: ${address || location}` : "Default delivery address"}>
@@ -183,7 +186,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
       {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
       {status && <p className="location-status">{status}</p>}
       {allowMap && <><button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Manage address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-      {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div ref={mapRef} className="map-canvas" aria-label="Tap the map to select a delivery point" /><small>Search an address or tap the map to choose your delivery point.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}</>}
+      {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div className="map-canvas-wrap"><div ref={mapRef} className="map-canvas" aria-label="Tap the map to select a delivery point" /><div className="map-zoom-controls" aria-label="Map zoom controls"><button type="button" onClick={() => zoomMap("in")} aria-label="Zoom in">+</button><button type="button" onClick={() => zoomMap("out")} aria-label="Zoom out">−</button></div></div><small>Search an address or tap the map to choose your delivery point.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}</>}
     </div>}
   </div>;
 }
