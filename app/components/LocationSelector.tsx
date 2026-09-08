@@ -231,6 +231,13 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     if (nextDefault) selectSavedAddress(nextDefault);
   }
 
+  function deleteAddress(id: string) {
+    const nextSaved = savedAddresses.filter((item) => item.id !== id);
+    setSavedAddresses(nextSaved);
+    window.localStorage.setItem("marketday-saved-addresses", JSON.stringify(nextSaved));
+    setStatus("Additional address removed.");
+  }
+
   if (!allowMap) {
     return <div className="location-picker header-location-picker">
       <div className="location header-location" title={confirmed ? (address || location) : "Default delivery address"} aria-label={confirmed ? `Recent delivery location: ${address || location}` : "Default delivery address"}>
@@ -246,7 +253,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     {open && <div className="location-menu" role="dialog" aria-label="Choose delivery area">
       <small>Delivering to</small>
       <button className="location-current" onClick={useCurrentLocation}><span>◎</span> Use my current location <b>→</b></button>
-      {savedAddresses.length > 0 && <div className="saved-addresses"><strong>Saved addresses</strong>{savedAddresses.map((saved) => <div className={`saved-address ${saved.isDefault ? "default" : ""}`} key={saved.id}><button type="button" onClick={() => selectSavedAddress(saved)}><span>{saved.address}</span><small>{saved.isDefault ? "Default address" : "Additional address"}</small></button>{!saved.isDefault && <button type="button" className="set-default" onClick={() => setDefaultAddress(saved.id)}>Set default</button>}</div>)}</div>}
+      {savedAddresses.length > 0 && <div className="saved-addresses"><strong>Saved addresses</strong>{savedAddresses.map((saved) => <div className={`saved-address ${saved.isDefault ? "default" : ""}`} key={saved.id}><button type="button" className="saved-address-select" onClick={() => selectSavedAddress(saved)}><span>{saved.address}</span><small>{saved.isDefault ? "Default address" : "Additional address"}</small></button>{!saved.isDefault && <><button type="button" className="set-default" onClick={() => setDefaultAddress(saved.id)}>Set default</button><button type="button" className="delete-address" onClick={() => deleteAddress(saved.id)} aria-label={`Delete ${saved.address}`}>Delete</button></>}</div>)}</div>}
       {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
       {status && <p className="location-status">{status}</p>}
       {allowMap && <><button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Manage address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
