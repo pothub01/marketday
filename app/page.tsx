@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 type Category = "All" | "Vegetables" | "Fruits" | "Meat" | "Seafood" | "Pantry";
 type View = "shop" | "orders" | "account" | "admin";
@@ -81,13 +82,13 @@ export default function Home() {
       <header className="header">
         <button className="brand" onClick={() => setView("shop")} aria-label="Marketday home"><span className="brand-mark">m</span><span>marketday<span className="brand-dot">.</span></span></button>
         <nav className="main-nav">
-          <button className={view === "shop" ? "active" : ""} onClick={() => setView("shop")}>Shop</button>
-          <button className={view === "orders" ? "active" : ""} onClick={() => setView("orders")}>My orders</button>
-          <button className={view === "account" ? "active" : ""} onClick={() => setView("account")}>Account</button>
+          <Link className={view === "shop" ? "active" : ""} href="/">Shop</Link>
+          <Link className={view === "orders" ? "active" : ""} href="/orders">My orders</Link>
+          <Link className={view === "account" ? "active" : ""} href="/account">Account</Link>
         </nav>
         <div className="header-actions">
           <button className="location"><span>⌖</span> Quezon City <b>⌄</b></button>
-          <button className="icon-button" onClick={() => setView("account")} aria-label="Account">♙</button>
+          <Link className="icon-button" href="/account" aria-label="Account">♙</Link>
           <button className="cart-button" onClick={() => setCartOpen(true)}><span>Cart</span><b>{itemCount}</b></button>
         </div>
       </header>
@@ -99,7 +100,7 @@ export default function Home() {
       {view === "account" && <AccountView setView={setView} />}
       {view === "admin" && <AdminView setView={setView} />}
 
-      <footer><div className="footer-brand"><span className="brand-mark">m</span><span>marketday<span className="brand-dot">.</span></span></div><p>Good food starts at the market.</p><div className="footer-links"><span>About</span><span>Help center</span><span>Delivery areas</span><button onClick={() => setView("admin")}>Admin preview</button></div></footer>
+      <footer><div className="footer-brand"><span className="brand-mark">m</span><span>marketday<span className="brand-dot">.</span></span></div><p>Good food starts at the market.</p><div className="footer-links"><span>About</span><span>Help center</span><span>Delivery areas</span><Link href="/admin">Admin preview</Link></div></footer>
 
       {cartOpen && <CartDrawer items={cartItems} cart={cart} subtotal={subtotal} delivery={delivery} updateCart={updateCart} close={() => setCartOpen(false)} checkout={() => { setCartOpen(false); setView("orders"); setNotice("Checkout is ready — your delivery slot is reserved"); setTimeout(() => setNotice(""), 3000); }} />}
     </main>
