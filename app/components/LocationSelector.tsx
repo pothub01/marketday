@@ -18,15 +18,11 @@ export default function LocationSelector() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<import("leaflet").Map | undefined>(undefined);
   const pinRef = useRef<import("leaflet").Marker | undefined>(undefined);
-  const locationRef = useRef(location);
   const coordinatesRef = useRef(coordinates);
-  const addressRef = useRef(address);
 
   useEffect(() => {
-    locationRef.current = location;
     coordinatesRef.current = coordinates;
-    addressRef.current = address;
-  }, [location, coordinates, address]);
+  }, [coordinates]);
 
   useEffect(() => {
     if (!mapOpen || !mapRef.current) return;
@@ -62,41 +58,6 @@ export default function LocationSelector() {
       }).addTo(map);
       mapInstanceRef.current = map;
       pinRef.current = pin;
-      const popup = leaflet.popup({ closeButton: false, offset: [0, -34] }).setContent(addressRef.current || "Move this pin to set your delivery location.");
-      pin.bindPopup(popup).openPopup();
-
-      const savePin = (position: import("leaflet").LatLng) => {
-        pin.setLatLng(position);
-        const pinPosition = pin.getLatLng();
-        const value = `${pinPosition.lat.toFixed(5)},${pinPosition.lng.toFixed(5)}`;
-        setLocation("Pinned location");
-        setCoordinates(value);
-        setConfirmed(false);
-        setAddress("Finding address…");
-        setStatus("Finding pinned address…");
-        window.localStorage.setItem("marketday-location", "Pinned location");
-        window.localStorage.setItem("marketday-coordinates", value);
-        window.localStorage.removeItem("marketday-location-confirmed");
-        popup.setContent("Finding address…").openOn(map as import("leaflet").Map);
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pinPosition.lat}&lon=${pinPosition.lng}`)
-          .then((response) => response.ok ? response.json() : Promise.reject(new Error("Address lookup failed")))
-          .then((result: { display_name?: string }) => {
-            const resolvedAddress = result.display_name || value;
-            setLocation(resolvedAddress);
-            setAddress(resolvedAddress);
-            setStatus("Pinned delivery location saved.");
-            window.localStorage.setItem("marketday-location", resolvedAddress);
-            window.localStorage.setItem("marketday-address", resolvedAddress);
-            popup.setContent(resolvedAddress).openOn(map as import("leaflet").Map);
-          })
-          .catch(() => {
-            setAddress("Address unavailable");
-            setStatus("Pin saved, but the address could not be found.");
-            window.localStorage.removeItem("marketday-address");
-            popup.setContent("Address unavailable").openOn(map as import("leaflet").Map);
-          });
-      };
-
     });
 
     return () => {
