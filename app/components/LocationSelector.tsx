@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 type LocationValue = { address: string; lat: number; lng: number };
+type SavedAddress = LocationValue & { id: string; isDefault: boolean };
 type MapLibreMap = import("maplibre-gl").Map;
 type MapLibreMarker = import("maplibre-gl").Marker;
 
@@ -17,6 +18,21 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
   const [coordinates, setCoordinates] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("marketday-coordinates") || "");
   const [address, setAddress] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("marketday-address") || "");
   const [confirmed, setConfirmed] = useState(() => typeof window !== "undefined" && window.localStorage.getItem("marketday-location-confirmed") === "true");
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("marketday-saved-addresses") || "[]") as SavedAddress[];
+      if (Array.isArray(saved) && saved.length) return saved;
+    } catch {
+      // Ignore invalid local address data and fall back to the legacy location fields.
+    }
+    const legacyAddress = window.localStorage.getItem("marketday-address");
+    const legacyCoordinates = window.localStorage.getItem("marketday-coordinates") || "";
+    const [lat, lng] = legacyCoordinates.split(",").map(Number);
+    return legacyAddress && Number.isFinite(lat) && Number.isFinite(lng)
+      ? [{ id: "legacy-default", address: legacyAddress, lat, lng, isDefault: true }]
+      : [];
+  });
   const [status, setStatus] = useState("");
   const [mapOpen, setMapOpen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -108,6 +124,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
       const lat = Number(result.lat);
       const lng = Number(result.lon);
       markerRef.current.setLngLat([lng, lat]);
+      mapInstanceRef.current?.easeTo({ center: [lng, lat], zoom: 15, duration: 350 });
       setLocation(result.display_name);
       setAddress(result.display_name);
       setCoordinates(`${lat.toFixed(5)},${lng.toFixed(5)}`);
@@ -153,10 +170,17 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
       setStatus("Set a delivery location first.");
       return;
     }
+    const nextLocation = { address: address || location, lat, lng };
+    const existing = savedAddresses.find((item) => item.address === nextLocation.address && item.lat === lat && item.lng === lng);
+    const nextSaved = existing
+      ? savedAddresses
+      : [...savedAddresses, { ...nextLocation, id: `${Date.now()}`, isDefault: savedAddresses.length === 0 }];
+    setSavedAddresses(nextSaved);
+    window.localStorage.setItem("marketday-saved-addresses", JSON.stringify(nextSaved));
     setConfirmed(true);
     setStatus("Delivery location confirmed.");
     window.localStorage.setItem("marketday-location-confirmed", "true");
-    onConfirm?.({ address: address || location, lat, lng });
+    onConfirm?.(nextLocation);
     setMapOpen(false);
     setOpen(false);
   }
@@ -166,6 +190,27 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     if (!map) return;
     if (direction === "in") map.zoomIn({ duration: 180 });
     else map.zoomOut({ duration: 180 });
+  }
+
+  function selectSavedAddress(saved: SavedAddress) {
+    setLocation(saved.address);
+    setAddress(saved.address);
+    setCoordinates(`${saved.lat.toFixed(5)},${saved.lng.toFixed(5)}`);
+    setConfirmed(true);
+    window.localStorage.setItem("marketday-location", saved.address);
+    window.localStorage.setItem("marketday-address", saved.address);
+    window.localStorage.setItem("marketday-coordinates", `${saved.lat.toFixed(5)},${saved.lng.toFixed(5)}`);
+    window.localStorage.setItem("marketday-location-confirmed", "true");
+    setStatus("Saved delivery address selected.");
+    setOpen(false);
+  }
+
+  function setDefaultAddress(id: string) {
+    const nextSaved = savedAddresses.map((item) => ({ ...item, isDefault: item.id === id }));
+    const nextDefault = nextSaved.find((item) => item.id === id);
+    setSavedAddresses(nextSaved);
+    window.localStorage.setItem("marketday-saved-addresses", JSON.stringify(nextSaved));
+    if (nextDefault) selectSavedAddress(nextDefault);
   }
 
   if (!allowMap) {
@@ -183,6 +228,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     {open && <div className="location-menu" role="dialog" aria-label="Choose delivery area">
       <small>Delivering to</small>
       <button className="location-current" onClick={useCurrentLocation}><span>◎</span> Use my current location <b>→</b></button>
+      {savedAddresses.length > 0 && <div className="saved-addresses"><strong>Saved addresses</strong>{savedAddresses.map((saved) => <div className={`saved-address ${saved.isDefault ? "default" : ""}`} key={saved.id}><button type="button" onClick={() => selectSavedAddress(saved)}><span>{saved.address}</span><small>{saved.isDefault ? "Default address" : "Additional address"}</small></button>{!saved.isDefault && <button type="button" className="set-default" onClick={() => setDefaultAddress(saved.id)}>Set default</button>}</div>)}</div>}
       {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
       {status && <p className="location-status">{status}</p>}
       {allowMap && <><button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Manage address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
