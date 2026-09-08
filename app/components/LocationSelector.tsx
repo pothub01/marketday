@@ -131,7 +131,7 @@ export default function LocationSelector() {
   return (
     <div className="location-picker">
       <button className="location" title={address || location} onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="listbox">
-        <span>⌖</span> {address || location} <b>⌄</b>
+        <span>⌖</span> <span className="location-label">{address || location}</span> <b>⌄</b>
       </button>
       {open && <div className="location-menu" role="listbox" aria-label="Choose delivery area">
         <small>Delivering to</small>
