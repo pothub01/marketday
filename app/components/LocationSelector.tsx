@@ -40,7 +40,7 @@ export default function LocationSelector() {
       const fallback: [number, number] = [14.5995, 120.9842];
       const center = parseCoordinates(coordinatesRef.current, fallback);
       map = leaflet.map(mapRef.current, {
-        zoomControl: true,
+        zoomControl: false,
         dragging: false,
         scrollWheelZoom: false,
         doubleClickZoom: false,
