@@ -36,3 +36,10 @@ user email in Vercel as `NEXT_PUBLIC_ADMIN_EMAIL` (or the comma-separated
 `NEXT_PUBLIC_ADMIN_EMAILS`) or assign `role: "admin"` in the user metadata.
 Redeploy after changing Vercel environment variables because public variables
 are embedded during the build.
+
+## Supabase database setup
+
+Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL Editor
+before using profiles, products, addresses, orders, or admin catalog controls.
+The migration enables row-level security and only permits admin product/order
+operations when the authenticated user has `app_metadata.role = "admin"`.
