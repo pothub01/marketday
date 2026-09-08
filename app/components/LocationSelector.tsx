@@ -29,6 +29,8 @@ export default function LocationSelector() {
 
     let disposed = false;
     let map: import("leaflet").Map | undefined;
+    let mapElement: HTMLElement | undefined;
+    const preventTouchMove = (event: TouchEvent) => event.preventDefault();
 
     import("leaflet").then((leaflet) => {
       if (disposed || !mapRef.current) return;
@@ -49,6 +51,9 @@ export default function LocationSelector() {
       map.scrollWheelZoom.disable();
       map.boxZoom.disable();
       map.keyboard.disable();
+      mapElement = map.getContainer();
+      mapElement.style.touchAction = "none";
+      mapElement.addEventListener("touchmove", preventTouchMove, { passive: false });
       leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(map);
@@ -70,7 +75,7 @@ export default function LocationSelector() {
         window.localStorage.setItem("marketday-location", "Selected map point");
         window.localStorage.removeItem("marketday-location-confirmed");
         try {
-          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${event.latlng.lat}&lon=${event.latlng.lng}`);
+          const response = await fetch(`/api/geocode?lat=${event.latlng.lat}&lon=${event.latlng.lng}`);
           if (!response.ok) throw new Error("Address lookup failed");
           const result = await response.json() as { display_name?: string };
           const resolvedAddress = result.display_name || value;
@@ -89,6 +94,7 @@ export default function LocationSelector() {
     return () => {
       disposed = true;
       map?.remove();
+      mapElement?.removeEventListener("touchmove", preventTouchMove);
       mapInstanceRef.current = undefined;
       pinRef.current = undefined;
     };
@@ -100,7 +106,7 @@ export default function LocationSelector() {
     if (!(input instanceof HTMLInputElement) || !input.value.trim()) return;
     setStatus("Searching for address…");
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(input.value.trim())}`);
+      const response = await fetch(`/api/geocode?q=${encodeURIComponent(input.value.trim())}`);
       if (!response.ok) throw new Error("Search failed");
       const results = await response.json() as Array<{ lat: string; lon: string; display_name: string }>;
       const result = results[0];
