@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import AuthModal from "./components/AuthModal";
@@ -47,6 +48,7 @@ function peso(value: number) {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [view, setView] = useState<View>("shop");
   const [category, setCategory] = useState<Category>("All");
   const [query, setQuery] = useState("");
@@ -108,7 +110,7 @@ export default function Home() {
 
       <footer><div className="footer-brand"><span className="brand-mark">m</span><span>marketday<span className="brand-dot">.</span></span></div><p>Good food starts at the market.</p><div className="footer-links"><span>About</span><span>Help center</span><span>Delivery areas</span><Link href="/admin">Admin preview</Link></div></footer>
 
-      {cartOpen && <CartDrawer items={cartItems} cart={cart} subtotal={subtotal} delivery={delivery} updateCart={updateCart} close={() => setCartOpen(false)} checkout={() => { setCartOpen(false); setView("orders"); setNotice("Checkout is ready — your delivery slot is reserved"); setTimeout(() => setNotice(""), 3000); }} />}
+      {cartOpen && <CartDrawer items={cartItems} cart={cart} subtotal={subtotal} delivery={delivery} updateCart={updateCart} close={() => setCartOpen(false)} checkout={() => { setCartOpen(false); router.push("/checkout"); }} />}
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </main>
   );
