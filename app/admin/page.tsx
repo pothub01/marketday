@@ -42,7 +42,9 @@ export default function AdminPage() {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) {
-      setMessage(error.message);
+      setMessage(error.message === "Failed to fetch"
+        ? "Unable to connect to Supabase. Check your Vercel Supabase URL, anon key, and project status."
+        : error.message);
       return;
     }
     const configuredEmails = [
