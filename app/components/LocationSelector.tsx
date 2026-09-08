@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const locations = ["Quezon City", "San Juan", "Makati", "Pasig"];
+const locationCoordinates: Record<string, [number, number]> = {
+  "Quezon City": [14.676, 121.0437],
+  "San Juan": [14.6019, 121.0355],
+  Makati: [14.5547, 121.0244],
+  Pasig: [14.5764, 121.0851],
+};
+
+function parseCoordinates(value: string, fallback: [number, number]) {
+  const [latitude, longitude] = value.split(",").map(Number);
+  return Number.isFinite(latitude) && Number.isFinite(longitude) ? [latitude, longitude] as [number, number] : fallback;
+}
 
 export default function LocationSelector() {
   const [open, setOpen] = useState(false);
@@ -10,6 +21,50 @@ export default function LocationSelector() {
   const [coordinates, setCoordinates] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("marketday-coordinates") || "");
   const [status, setStatus] = useState("");
   const [mapOpen, setMapOpen] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const locationRef = useRef(location);
+  const coordinatesRef = useRef(coordinates);
+
+  useEffect(() => {
+    locationRef.current = location;
+    coordinatesRef.current = coordinates;
+  }, [location, coordinates]);
+
+  useEffect(() => {
+    if (!mapOpen || !mapRef.current) return;
+
+    let disposed = false;
+    let map: import("leaflet").Map | undefined;
+
+    import("leaflet").then((leaflet) => {
+      if (disposed || !mapRef.current) return;
+      const fallback = locationCoordinates[locationRef.current] || locationCoordinates["Quezon City"];
+      const center = parseCoordinates(coordinatesRef.current, fallback);
+      map = leaflet.map(mapRef.current, { zoomControl: true }).setView(center, coordinatesRef.current ? 16 : 13);
+      leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+      const pin = leaflet.marker(center, {
+        draggable: true,
+        icon: leaflet.divIcon({ className: "delivery-pin", html: "<span>●</span>", iconSize: [28, 28], iconAnchor: [14, 28] }),
+      }).addTo(map);
+
+      pin.on("dragend", () => {
+        const position = pin.getLatLng();
+        const value = `${position.lat.toFixed(5)},${position.lng.toFixed(5)}`;
+        setLocation("Pinned location");
+        setCoordinates(value);
+        setStatus("Pinned delivery location saved.");
+        window.localStorage.setItem("marketday-location", "Pinned location");
+        window.localStorage.setItem("marketday-coordinates", value);
+      });
+    });
+
+    return () => {
+      disposed = true;
+      map?.remove();
+    };
+  }, [mapOpen]);
 
   function selectLocation(value: string) {
     setLocation(value);
@@ -43,10 +98,6 @@ export default function LocationSelector() {
     );
   }
 
-  function mapQuery() {
-    return encodeURIComponent(coordinates || `${location}, Metro Manila, Philippines`);
-  }
-
   return (
     <div className="location-picker">
       <button className="location" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="listbox">
@@ -58,7 +109,7 @@ export default function LocationSelector() {
         {locations.map((item) => <button key={item} className={item === location ? "selected" : ""} onClick={() => selectLocation(item)} role="option" aria-selected={item === location}>{item}<span>{item === location ? "✓" : "→"}</span></button>)}
         {status && <p className="location-status">{status}</p>}
         <button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "View delivery map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-        {mapOpen && <div className="embedded-map"><iframe title={`Delivery map for ${location}`} src={`https://www.google.com/maps?q=${mapQuery()}&output=embed`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" /><small>Map powered by Google Maps</small></div>}
+        {mapOpen && <div className="embedded-map"><div ref={mapRef} className="map-canvas" /><small>Drag the pin to your exact delivery location.</small>{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={() => { setMapOpen(false); setOpen(false); }}>Confirm delivery pin</button></div>}
       </div>}
     </div>
   );
