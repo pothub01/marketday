@@ -185,6 +185,24 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     setOpen(false);
   }
 
+  function saveAddress() {
+    const [lat, lng] = coordinates.split(",").map(Number);
+    const savedAddress = address || location;
+    if (!savedAddress || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+      setStatus("Search for an address or select a map point first.");
+      return;
+    }
+    const existing = savedAddresses.find((item) => item.address === savedAddress && item.lat === lat && item.lng === lng);
+    if (existing) {
+      setStatus("This address is already saved.");
+      return;
+    }
+    const nextSaved = [...savedAddresses, { id: `${Date.now()}`, address: savedAddress, lat, lng, isDefault: savedAddresses.length === 0 }];
+    setSavedAddresses(nextSaved);
+    window.localStorage.setItem("marketday-saved-addresses", JSON.stringify(nextSaved));
+    setStatus("Address saved.");
+  }
+
   function zoomMap(direction: "in" | "out") {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -232,7 +250,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
       {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
       {status && <p className="location-status">{status}</p>}
       {allowMap && <><button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Manage address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-      {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div className="map-canvas-wrap"><div ref={mapRef} className="map-canvas" aria-label="Tap the map to select a delivery point" /><div className="map-zoom-controls" aria-label="Map zoom controls"><button type="button" onClick={() => zoomMap("in")} aria-label="Zoom in">+</button><button type="button" onClick={() => zoomMap("out")} aria-label="Zoom out">−</button></div></div><small>Search an address or tap the map to choose your delivery point.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}</>}
+      {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div className="map-canvas-wrap"><div ref={mapRef} className="map-canvas" aria-label="Tap the map to select a delivery point" /><div className="map-zoom-controls" aria-label="Map zoom controls"><button type="button" onClick={() => zoomMap("in")} aria-label="Zoom in">+</button><button type="button" onClick={() => zoomMap("out")} aria-label="Zoom out">−</button></div></div><small>Search an address or tap the map to choose your delivery point.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<div className="location-actions"><button className="save-address" type="button" onClick={saveAddress} disabled={!coordinates}>Save address</button><button className="confirm-pin" type="button" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div></div>}</>}
     </div>}
   </div>;
 }
