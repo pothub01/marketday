@@ -54,6 +54,7 @@ export default function Home() {
   const [cartOpen, setCartOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [authOpen, setAuthOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const filtered = useMemo(
     () => products.filter((product) => (category === "All" || product.category === category) && product.name.toLowerCase().includes(query.toLowerCase())),
@@ -85,10 +86,11 @@ export default function Home() {
       <div className="announcement"><span>✦</span> Free delivery on orders over ₱1,000 <span>•</span> Same-day delivery until 5 PM</div>
       <header className="header">
         <button className="brand" onClick={() => setView("shop")} aria-label="Marketday home"><span className="brand-mark">m</span><span>marketday<span className="brand-dot">.</span></span></button>
-        <nav className="main-nav">
-          <Link className={view === "shop" ? "active" : ""} href="/">Shop</Link>
-          <Link className={view === "orders" ? "active" : ""} href="/orders">My orders</Link>
-          <Link className={view === "account" ? "active" : ""} href="/account">Account</Link>
+        <button className="mobile-menu-toggle" onClick={() => setMenuOpen((value) => !value)} aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={menuOpen}>☰</button>
+        <nav className={`main-nav ${menuOpen ? "menu-open" : ""}`}>
+          <Link onClick={() => setMenuOpen(false)} className={view === "shop" ? "active" : ""} href="/">Shop</Link>
+          <Link onClick={() => setMenuOpen(false)} className={view === "orders" ? "active" : ""} href="/orders">My orders</Link>
+          <Link onClick={() => setMenuOpen(false)} className={view === "account" ? "active" : ""} href="/account">Account</Link>
         </nav>
         <div className="header-actions">
           <LocationSelector />
