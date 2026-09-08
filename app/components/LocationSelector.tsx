@@ -165,6 +165,14 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     setOpen(false);
   }
 
+  if (!allowMap) {
+    return <div className="location-picker header-location-picker">
+      <div className="location header-location" title={confirmed ? (address || location) : "Default delivery address"} aria-label={confirmed ? `Recent delivery location: ${address || location}` : "Default delivery address"}>
+        <span>⌖</span> <span className="location-label">{confirmed ? (address || location) : "Default delivery address"}</span>
+      </div>
+    </div>;
+  }
+
   return <div className="location-picker">
     <button className="location" title={address || location} onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="dialog">
       <span>⌖</span> <span className="location-label">{address || (confirmed ? location : "Set delivery location")}</span> <b>⌄</b>
