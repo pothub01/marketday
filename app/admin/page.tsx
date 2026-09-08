@@ -39,6 +39,18 @@ export default function AdminPage() {
       return;
     }
     setBusy(true);
+    try {
+      const health = await fetch("/api/supabase-check", { cache: "no-store" });
+      if (!health.ok) {
+        setBusy(false);
+        setMessage("The deployed app cannot reach Supabase. Check the project is active and that the Vercel variables belong to the same Supabase project.");
+        return;
+      }
+    } catch {
+      setBusy(false);
+      setMessage("The deployed app cannot verify its Supabase connection. Redeploy the latest Vercel build and try again.");
+      return;
+    }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
     if (error) {
