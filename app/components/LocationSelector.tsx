@@ -126,7 +126,6 @@ export default function LocationSelector() {
       const leaflet = await import("leaflet");
       const position = leaflet.latLng(Number(result.lat), Number(result.lon));
       pinRef.current.setLatLng(position);
-      mapInstanceRef.current.setView(position, mapInstanceRef.current.getZoom(), { animate: false });
       setLocation(result.display_name);
       setAddress(result.display_name);
       setCoordinates(`${position.lat.toFixed(5)},${position.lng.toFixed(5)}`);
