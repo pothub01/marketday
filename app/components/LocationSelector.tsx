@@ -7,7 +7,9 @@ function parseCoordinates(value: string, fallback: [number, number]) {
   return Number.isFinite(latitude) && Number.isFinite(longitude) ? [latitude, longitude] as [number, number] : fallback;
 }
 
-export default function LocationSelector() {
+type LocationValue = { address: string; lat: number; lng: number };
+
+export default function LocationSelector({ onConfirm }: { onConfirm?: (location: LocationValue) => void }) {
   const [open, setOpen] = useState(false);
   const [location, setLocation] = useState(() => typeof window === "undefined" ? "My location" : window.localStorage.getItem("marketday-location") || "My location");
   const [coordinates, setCoordinates] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("marketday-coordinates") || "");
@@ -57,7 +59,6 @@ export default function LocationSelector() {
       mapElement = map.getContainer();
       mapElement.style.touchAction = "none";
       mapElement.style.overscrollBehavior = "none";
-      mapElement.addEventListener("touchstart", preventTouchMove, { passive: false });
       mapElement.addEventListener("touchmove", preventTouchMove, { passive: false });
       mapElement.addEventListener("pointermove", preventPointerMove, { passive: false });
       map.on("movestart", () => map?.stop());
@@ -102,7 +103,6 @@ export default function LocationSelector() {
       disposed = true;
       map?.remove();
       mapElement?.removeEventListener("touchmove", preventTouchMove);
-      mapElement?.removeEventListener("touchstart", preventTouchMove);
       mapElement?.removeEventListener("pointermove", preventPointerMove);
       mapInstanceRef.current = undefined;
       pinRef.current = undefined;
@@ -175,6 +175,10 @@ export default function LocationSelector() {
     setStatus("Delivery location confirmed.");
     setConfirmed(true);
     window.localStorage.setItem("marketday-location-confirmed", "true");
+    const [lat, lng] = coordinates.split(",").map(Number);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      onConfirm?.({ address: address || location, lat, lng });
+    }
     setMapOpen(false);
     setOpen(false);
   }
@@ -182,7 +186,7 @@ export default function LocationSelector() {
   return (
     <div className="location-picker">
       <button className="location" title={address || location} onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="listbox">
-        <span>⌖</span> <span className="location-label">{address || location}</span> <b>⌄</b>
+        <span>⌖</span> <span className="location-label">{address || (confirmed ? location : "Set delivery location")}</span> <b>⌄</b>
       </button>
       {open && <div className="location-menu" role="listbox" aria-label="Choose delivery area">
         <small>Delivering to</small>
