@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import LocationSelector from "./components/LocationSelector";
 import AuthModal from "./components/AuthModal";
 import AuthStatus from "./components/AuthStatus";
 
@@ -93,7 +92,6 @@ export default function Home() {
           <Link onClick={() => setMenuOpen(false)} className={view === "account" ? "active" : ""} href="/account">Account</Link>
         </nav>
         <div className="header-actions">
-          <LocationSelector />
           <AuthStatus />
           <button className="cart-button" onClick={() => setCartOpen(true)}><span>Cart</span><b>{itemCount}</b></button>
         </div>
