@@ -11,16 +11,19 @@ export default function LocationSelector() {
   const [open, setOpen] = useState(false);
   const [location, setLocation] = useState(() => typeof window === "undefined" ? "My location" : window.localStorage.getItem("marketday-location") || "My location");
   const [coordinates, setCoordinates] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("marketday-coordinates") || "");
+  const [address, setAddress] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("marketday-address") || "");
   const [status, setStatus] = useState("");
   const [mapOpen, setMapOpen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
   const locationRef = useRef(location);
   const coordinatesRef = useRef(coordinates);
+  const addressRef = useRef(address);
 
   useEffect(() => {
     locationRef.current = location;
     coordinatesRef.current = coordinates;
-  }, [location, coordinates]);
+    addressRef.current = address;
+  }, [location, coordinates, address]);
 
   useEffect(() => {
     if (!mapOpen || !mapRef.current) return;
@@ -38,8 +41,10 @@ export default function LocationSelector() {
       }).addTo(map);
       const pin = leaflet.marker(center, {
         draggable: true,
-        icon: leaflet.divIcon({ className: "delivery-pin", html: "<span>●</span>", iconSize: [28, 28], iconAnchor: [14, 28] }),
+        icon: leaflet.divIcon({ className: "delivery-pin", html: "<span></span>", iconSize: [32, 40], iconAnchor: [16, 40] }),
       }).addTo(map);
+      const popup = leaflet.popup({ closeButton: false, offset: [0, -34] }).setContent(addressRef.current || "Move this pin to set your delivery location.");
+      pin.bindPopup(popup).openPopup();
 
       const savePin = (position: import("leaflet").LatLng) => {
         pin.setLatLng(position);
@@ -47,9 +52,26 @@ export default function LocationSelector() {
         const value = `${pinPosition.lat.toFixed(5)},${pinPosition.lng.toFixed(5)}`;
         setLocation("Pinned location");
         setCoordinates(value);
-        setStatus("Pinned delivery location saved.");
+        setAddress("Finding address…");
+        setStatus("Finding pinned address…");
         window.localStorage.setItem("marketday-location", "Pinned location");
         window.localStorage.setItem("marketday-coordinates", value);
+        popup.setContent("Finding address…").openOn(map as import("leaflet").Map);
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pinPosition.lat}&lon=${pinPosition.lng}`)
+          .then((response) => response.ok ? response.json() : Promise.reject(new Error("Address lookup failed")))
+          .then((result: { display_name?: string }) => {
+            const resolvedAddress = result.display_name || value;
+            setAddress(resolvedAddress);
+            setStatus("Pinned delivery location saved.");
+            window.localStorage.setItem("marketday-address", resolvedAddress);
+            popup.setContent(resolvedAddress).openOn(map as import("leaflet").Map);
+          })
+          .catch(() => {
+            setAddress("Address unavailable");
+            setStatus("Pin saved, but the address could not be found.");
+            window.localStorage.removeItem("marketday-address");
+            popup.setContent("Address unavailable").openOn(map as import("leaflet").Map);
+          });
       };
 
       pin.on("dragend", () => savePin(pin.getLatLng()));
@@ -85,6 +107,16 @@ export default function LocationSelector() {
     );
   }
 
+  function confirmLocation() {
+    if (!coordinates) {
+      setStatus("Set a delivery pin first.");
+      return;
+    }
+    setStatus("Delivery location confirmed.");
+    setMapOpen(false);
+    setOpen(false);
+  }
+
   return (
     <div className="location-picker">
       <button className="location" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-haspopup="listbox">
@@ -95,7 +127,7 @@ export default function LocationSelector() {
         <button className="location-current" onClick={useCurrentLocation}><span>◎</span> Use my current location <b>→</b></button>
         {status && <p className="location-status">{status}</p>}
         <button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "View delivery map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-        {mapOpen && <div className="embedded-map"><div ref={mapRef} className="map-canvas" /><small>Drag the pin or tap the map to set your delivery location.</small>{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={() => { setMapOpen(false); setOpen(false); }}>Confirm delivery location</button></div>}
+        {mapOpen && <div className="embedded-map"><div ref={mapRef} className="map-canvas" /><small>Drag the pin or tap the map to set your delivery location.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
       </div>}
     </div>
   );
