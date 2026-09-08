@@ -58,6 +58,32 @@ export default function LocationSelector() {
       }).addTo(map);
       mapInstanceRef.current = map;
       pinRef.current = pin;
+      map.on("click", async (event) => {
+        pin.setLatLng(event.latlng);
+        const value = `${event.latlng.lat.toFixed(5)},${event.latlng.lng.toFixed(5)}`;
+        setCoordinates(value);
+        setLocation("Selected map point");
+        setAddress("Finding address…");
+        setConfirmed(false);
+        setStatus("Finding tapped location…");
+        window.localStorage.setItem("marketday-coordinates", value);
+        window.localStorage.setItem("marketday-location", "Selected map point");
+        window.localStorage.removeItem("marketday-location-confirmed");
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${event.latlng.lat}&lon=${event.latlng.lng}`);
+          if (!response.ok) throw new Error("Address lookup failed");
+          const result = await response.json() as { display_name?: string };
+          const resolvedAddress = result.display_name || value;
+          setLocation(resolvedAddress);
+          setAddress(resolvedAddress);
+          setStatus("Point selected. Confirm this delivery location.");
+          window.localStorage.setItem("marketday-location", resolvedAddress);
+          window.localStorage.setItem("marketday-address", resolvedAddress);
+        } catch {
+          setAddress("Address unavailable");
+          setStatus("Point selected, but its address could not be found.");
+        }
+      });
     });
 
     return () => {
@@ -96,7 +122,7 @@ export default function LocationSelector() {
       window.localStorage.setItem("marketday-coordinates", `${position.lat.toFixed(5)},${position.lng.toFixed(5)}`);
       window.localStorage.removeItem("marketday-location-confirmed");
     } catch {
-      setStatus("Unable to search right now. Try dragging the pin instead.");
+      setStatus("Unable to search right now. Tap the map to choose a point.");
     }
   }
 
@@ -150,7 +176,7 @@ export default function LocationSelector() {
         {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
         {status && <p className="location-status">{status}</p>}
         <button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Set delivery address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-        {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div ref={mapRef} className="map-canvas" aria-label="Map preview of selected delivery location" /><small>Search for an address or use your current location. The map preview is fixed.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
+        {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div ref={mapRef} className="map-canvas" aria-label="Tap the map to select a delivery point" /><small>Search an address or tap the map to choose your delivery point. The map stays fixed.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
       </div>}
     </div>
   );
