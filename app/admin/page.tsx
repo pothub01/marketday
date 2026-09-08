@@ -23,8 +23,8 @@ const initialOrders: AdminOrder[] = [
 
 function getInitialAdminOrders() {
   if (typeof window === "undefined") return initialOrders;
-  const savedOrders = JSON.parse(window.localStorage.getItem("marketday-orders") || "[]") as Array<{ id: string; customer: string; address?: string; paymentMethod?: string; status: AdminOrder["status"] }>;
-  return [...initialOrders, ...savedOrders.map((order) => ({ ...order, items: 3, total: "₱763", area: order.address || "Delivery address" }))];
+  const savedOrders = JSON.parse(window.localStorage.getItem("marketday-orders") || "[]") as Array<{ id: string; customer: string; address?: string; items?: unknown[]; total?: number; status: AdminOrder["status"] }>;
+  return [...initialOrders, ...savedOrders.map((order): AdminOrder => ({ id: order.id, customer: order.customer, items: Array.isArray(order.items) ? order.items.reduce<number>((sum, item) => sum + (typeof item === "object" && item && "quantity" in item && typeof item.quantity === "number" ? item.quantity : 1), 0) : 1, total: `₱${(order.total || 0).toLocaleString("en-PH")}`, area: order.address || "Delivery address", address: order.address, status: order.status }))];
 }
 
 export default function AdminPage() {

@@ -52,7 +52,10 @@ export default function Home() {
   const [view, setView] = useState<View>("shop");
   const [category, setCategory] = useState<Category>("All");
   const [query, setQuery] = useState("");
-  const [cart, setCart] = useState<Record<number, number>>({});
+  const [cart, setCart] = useState<Record<number, number>>(() => {
+    if (typeof window === "undefined") return {};
+    return JSON.parse(window.localStorage.getItem("marketday-cart") || "{}") as Record<number, number>;
+  });
   const [cartOpen, setCartOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [authOpen, setAuthOpen] = useState(false);
@@ -68,7 +71,11 @@ export default function Home() {
   const delivery = subtotal >= 1000 || subtotal === 0 ? 0 : 59;
 
   function addToCart(id: number) {
-    setCart((current) => ({ ...current, [id]: (current[id] || 0) + 1 }));
+    setCart((current) => {
+      const next = { ...current, [id]: (current[id] || 0) + 1 };
+      window.localStorage.setItem("marketday-cart", JSON.stringify(next));
+      return next;
+    });
     const item = products.find((product) => product.id === id);
     setNotice(`${item?.name} added to your cart`);
     setTimeout(() => setNotice(""), 2200);
@@ -79,6 +86,7 @@ export default function Home() {
       const next = Math.max(0, (current[id] || 0) + change);
       const copy = { ...current };
       if (next === 0) delete copy[id]; else copy[id] = next;
+      window.localStorage.setItem("marketday-cart", JSON.stringify(copy));
       return copy;
     });
   }
@@ -110,7 +118,7 @@ export default function Home() {
 
       <footer><div className="footer-brand"><span className="brand-mark">m</span><span>marketday<span className="brand-dot">.</span></span></div><p>Good food starts at the market.</p><div className="footer-links"><span>About</span><span>Help center</span><span>Delivery areas</span><Link href="/admin">Admin preview</Link></div></footer>
 
-      {cartOpen && <CartDrawer items={cartItems} cart={cart} subtotal={subtotal} delivery={delivery} updateCart={updateCart} close={() => setCartOpen(false)} checkout={() => { setCartOpen(false); router.push("/checkout"); }} />}
+      {cartOpen && <CartDrawer items={cartItems} cart={cart} subtotal={subtotal} delivery={delivery} updateCart={updateCart} close={() => setCartOpen(false)} checkout={() => { window.localStorage.setItem("marketday-cart-items", JSON.stringify(cartItems.map((item) => ({ ...item, quantity: cart[item.id] })))); window.localStorage.setItem("marketday-cart-subtotal", String(subtotal)); window.localStorage.setItem("marketday-cart-delivery", String(delivery)); setCartOpen(false); router.push("/checkout"); }} />}
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </main>
   );
