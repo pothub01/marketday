@@ -210,7 +210,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     else map.zoomOut({ duration: 180 });
   }
 
-  function selectSavedAddress(saved: SavedAddress) {
+  function selectSavedAddress(saved: SavedAddress, close = true) {
     setLocation(saved.address);
     setAddress(saved.address);
     setCoordinates(`${saved.lat.toFixed(5)},${saved.lng.toFixed(5)}`);
@@ -220,7 +220,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     window.localStorage.setItem("marketday-coordinates", `${saved.lat.toFixed(5)},${saved.lng.toFixed(5)}`);
     window.localStorage.setItem("marketday-location-confirmed", "true");
     setStatus("Saved delivery address selected.");
-    setOpen(false);
+    if (close) setOpen(false);
   }
 
   function setDefaultAddress(id: string) {
@@ -228,7 +228,7 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     const nextDefault = nextSaved.find((item) => item.id === id);
     setSavedAddresses(nextSaved);
     window.localStorage.setItem("marketday-saved-addresses", JSON.stringify(nextSaved));
-    if (nextDefault) selectSavedAddress(nextDefault);
+    if (nextDefault) selectSavedAddress(nextDefault, false);
   }
 
   function deleteAddress(id: string) {
