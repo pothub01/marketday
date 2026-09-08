@@ -16,7 +16,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
   const [customerName, setCustomerName] = useState("Marketday shopper");
-  const [deliveryAddress, setDeliveryAddress] = useState(getSavedDeliveryAddress);
+  const [deliveryAddress] = useState(getSavedDeliveryAddress);
   const [placed, setPlaced] = useState(false);
 
   useEffect(() => {
