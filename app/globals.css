@@ -30,4 +30,5 @@ footer{padding-top:34px;padding-bottom:34px}
 .cart-drawer{background:#fffefa}.drawer-head{padding:33px 30px 22px}.cart-item{padding:17px 0}.checkout{border-radius:26px}
 .simple-page,.admin-page{padding-top:87px}.page-title h1,.admin-head h1{font-weight:600}.order-card,.account-card,.admin-panel,.stats>div{border-radius:11px;box-shadow:0 7px 28px rgba(44,76,54,.045)}.status-pill{padding-left:13px;padding-right:13px}
 .account-banner{border-radius:11px;background:linear-gradient(110deg,#e4efe1,#d8e8db)}
+.loading-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--cream);color:var(--muted)}.loading-screen p{font-size:12px}.error-page{min-height:70vh}.error-page h1{font-size:48px;letter-spacing:-.07em;margin:12px 0}.error-page p{color:var(--muted);margin-bottom:24px}
 @media(max-width:800px){.main-nav{margin-left:20px}.hero{padding-top:63px;padding-bottom:73px}.product-image{height:205px}.promise{padding-top:68px;padding-bottom:68px}}
