@@ -11,7 +11,7 @@ function parseCoordinates(value: string, fallback: [number, number]) {
   return Number.isFinite(latitude) && Number.isFinite(longitude) ? [latitude, longitude] as [number, number] : fallback;
 }
 
-export default function LocationSelector({ onConfirm }: { onConfirm?: (location: LocationValue) => void }) {
+export default function LocationSelector({ onConfirm, allowMap = true }: { onConfirm?: (location: LocationValue) => void; allowMap?: boolean }) {
   const [open, setOpen] = useState(false);
   const [location, setLocation] = useState(() => typeof window === "undefined" ? "My location" : window.localStorage.getItem("marketday-location") || "My location");
   const [coordinates, setCoordinates] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("marketday-coordinates") || "");
@@ -144,7 +144,7 @@ export default function LocationSelector({ onConfirm }: { onConfirm?: (location:
         window.localStorage.removeItem("marketday-address");
         window.localStorage.removeItem("marketday-location-confirmed");
         setStatus("Location synced.");
-        setMapOpen(true);
+        if (allowMap) setMapOpen(true);
       },
       (error) => setStatus(error.code === error.PERMISSION_DENIED ? "Location access was denied. Allow it in your browser settings, then try again." : "Could not find your location. Try again or search for an address."),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
@@ -174,8 +174,8 @@ export default function LocationSelector({ onConfirm }: { onConfirm?: (location:
       <button className="location-current" onClick={useCurrentLocation}><span>◎</span> Use my current location <b>→</b></button>
       {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
       {status && <p className="location-status">{status}</p>}
-      <button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Set delivery address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-      {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div ref={mapRef} className="map-canvas" aria-label="Tap the map to select a delivery point" /><small>Search an address or tap the map to choose your delivery point.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
+      {allowMap && <><button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Manage address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
+      {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div ref={mapRef} className="map-canvas" aria-label="Tap the map to select a delivery point" /><small>Search an address or tap the map to choose your delivery point.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}</>}
     </div>}
   </div>;
 }

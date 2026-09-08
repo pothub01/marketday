@@ -93,7 +93,7 @@ export default function Home() {
           <Link onClick={() => setMenuOpen(false)} className={view === "account" ? "active" : ""} href="/account">Account</Link>
         </nav>
         <div className="header-actions">
-          <LocationSelector />
+          <LocationSelector allowMap={false} />
           <AuthStatus />
           <button className="cart-button" onClick={() => setCartOpen(true)}><span>Cart</span><b>{itemCount}</b></button>
         </div>
