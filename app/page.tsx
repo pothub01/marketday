@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import LocationSelector from "./components/LocationSelector";
+import AuthModal from "./components/AuthModal";
 
 type Category = "All" | "Vegetables" | "Fruits" | "Meat" | "Seafood" | "Pantry";
 type View = "shop" | "orders" | "account" | "admin";
@@ -51,6 +52,7 @@ export default function Home() {
   const [cart, setCart] = useState<Record<number, number>>({});
   const [cartOpen, setCartOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [authOpen, setAuthOpen] = useState(false);
 
   const filtered = useMemo(
     () => products.filter((product) => (category === "All" || product.category === category) && product.name.toLowerCase().includes(query.toLowerCase())),
@@ -89,7 +91,7 @@ export default function Home() {
         </nav>
         <div className="header-actions">
           <LocationSelector />
-          <Link className="sign-in-link" href="/account">Sign in</Link>
+          <button className="sign-in-link" onClick={() => setAuthOpen(true)}>Sign in</button>
           <button className="cart-button" onClick={() => setCartOpen(true)}><span>Cart</span><b>{itemCount}</b></button>
         </div>
       </header>
@@ -104,6 +106,7 @@ export default function Home() {
       <footer><div className="footer-brand"><span className="brand-mark">m</span><span>marketday<span className="brand-dot">.</span></span></div><p>Good food starts at the market.</p><div className="footer-links"><span>About</span><span>Help center</span><span>Delivery areas</span><Link href="/admin">Admin preview</Link></div></footer>
 
       {cartOpen && <CartDrawer items={cartItems} cart={cart} subtotal={subtotal} delivery={delivery} updateCart={updateCart} close={() => setCartOpen(false)} checkout={() => { setCartOpen(false); setView("orders"); setNotice("Checkout is ready — your delivery slot is reserved"); setTimeout(() => setNotice(""), 3000); }} />}
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </main>
   );
 }
