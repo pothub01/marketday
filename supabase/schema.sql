@@ -80,6 +80,17 @@ alter table public.addresses enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 
+drop policy if exists "Public can view available products" on public.products;
+drop policy if exists "Admins manage products" on public.products;
+drop policy if exists "Users view own profile" on public.profiles;
+drop policy if exists "Users update own profile" on public.profiles;
+drop policy if exists "Users manage own addresses" on public.addresses;
+drop policy if exists "Users view own orders" on public.orders;
+drop policy if exists "Users create own orders" on public.orders;
+drop policy if exists "Admins update orders" on public.orders;
+drop policy if exists "Users view own order items" on public.order_items;
+drop policy if exists "Users add items to own orders" on public.order_items;
+
 create policy "Public can view available products"
   on public.products for select
   using (is_available = true or auth.jwt() -> 'app_metadata' ->> 'role' = 'admin');
