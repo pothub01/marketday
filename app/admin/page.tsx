@@ -24,7 +24,13 @@ const initialOrders: AdminOrder[] = [
 function getInitialAdminOrders() {
   if (typeof window === "undefined") return initialOrders;
   const savedOrders = JSON.parse(window.localStorage.getItem("marketday-orders") || "[]") as Array<{ id: string; customer: string; address?: string; items?: unknown[]; total?: number; status: AdminOrder["status"] }>;
-  return [...initialOrders, ...savedOrders.map((order): AdminOrder => ({ id: order.id, customer: order.customer, items: Array.isArray(order.items) ? order.items.reduce<number>((sum, item) => sum + (typeof item === "object" && item && "quantity" in item && typeof item.quantity === "number" ? item.quantity : 1), 0) : 1, total: `₱${(order.total || 0).toLocaleString("en-PH")}`, area: order.address || "Delivery address", address: order.address, status: order.status }))];
+  const deletedIds = new Set(JSON.parse(window.localStorage.getItem("marketday-deleted-orders") || "[]") as string[]);
+  return [...initialOrders, ...savedOrders.filter((order) => !deletedIds.has(order.id)).map((order): AdminOrder => ({ id: order.id, customer: order.customer, items: Array.isArray(order.items) ? order.items.reduce<number>((sum, item) => sum + (typeof item === "object" && item && "quantity" in item && typeof item.quantity === "number" ? item.quantity : 1), 0) : 1, total: `₱${(order.total || 0).toLocaleString("en-PH")}`, area: order.address || "Delivery address", address: order.address, status: order.status }))];
+}
+
+function getInitialProducts() {
+  if (typeof window === "undefined") return initialProducts;
+  return JSON.parse(window.localStorage.getItem("marketday-admin-products") || JSON.stringify(initialProducts)) as AdminProduct[];
 }
 
 export default function AdminPage() {
@@ -35,7 +41,7 @@ export default function AdminPage() {
   const [checkingSession, setCheckingSession] = useState(Boolean(supabase));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState(getInitialProducts);
   const [orders, setOrders] = useState(getInitialAdminOrders);
   const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders">("overview");
 
@@ -110,11 +116,19 @@ export default function AdminPage() {
   }
 
   function updateProduct(id: number, field: "price" | "stock", value: number) {
-    setProducts((current) => current.map((product) => product.id === id ? { ...product, [field]: Math.max(0, value), available: field === "stock" ? value > 0 : product.available } : product));
+    setProducts((current) => {
+      const next = current.map((product) => product.id === id ? { ...product, [field]: Math.max(0, value), available: field === "stock" ? value > 0 : product.available } : product);
+      window.localStorage.setItem("marketday-admin-products", JSON.stringify(next));
+      return next;
+    });
   }
 
   function toggleAvailability(id: number) {
-    setProducts((current) => current.map((product) => product.id === id ? { ...product, available: !product.available } : product));
+    setProducts((current) => {
+      const next = current.map((product) => product.id === id ? { ...product, available: !product.available } : product);
+      window.localStorage.setItem("marketday-admin-products", JSON.stringify(next));
+      return next;
+    });
   }
 
   function updateOrder(id: string, status: AdminOrder["status"]) {
@@ -128,6 +142,9 @@ export default function AdminPage() {
   function deleteOrder(id: string) {
     setOrders((current) => {
       const next = current.filter((order) => order.id !== id);
+      const deletedIds = new Set(JSON.parse(window.localStorage.getItem("marketday-deleted-orders") || "[]") as string[]);
+      deletedIds.add(id);
+      window.localStorage.setItem("marketday-deleted-orders", JSON.stringify([...deletedIds]));
       window.localStorage.setItem("marketday-orders", JSON.stringify(next.filter((order) => order.id.startsWith("MK-"))));
       return next;
     });
