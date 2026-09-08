@@ -181,8 +181,6 @@ export default function LocationSelector({ onConfirm, allowMap = true }: { onCon
     setStatus("Delivery location confirmed.");
     window.localStorage.setItem("marketday-location-confirmed", "true");
     onConfirm?.(nextLocation);
-    setMapOpen(false);
-    setOpen(false);
   }
 
   function saveAddress() {
