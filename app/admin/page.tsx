@@ -6,7 +6,7 @@ import RouteHeader, { RouteFooter } from "../components/RouteHeader";
 import { supabase } from "../../lib/supabase";
 
 type AdminProduct = { id: number; name: string; category: string; price: number; stock: number; available: boolean };
-type AdminOrder = { id: string; customer: string; items: number; total: string; area: string; status: "Packing" | "Ready" | "On the way" | "Delivered" | "Cancelled" };
+type AdminOrder = { id: string; customer: string; items: number; total: string; area: string; address?: string; paymentMethod?: string; status: "Packing" | "Ready" | "On the way" | "Delivered" | "Cancelled" };
 
 const initialProducts: AdminProduct[] = [
   { id: 1, name: "Baguio strawberries", category: "Fruits", price: 189, stock: 4, available: true },
@@ -21,6 +21,12 @@ const initialOrders: AdminOrder[] = [
   { id: "#MK-28501", customer: "Bea Lim", items: 5, total: "₱940", area: "New Manila", status: "Ready" },
 ];
 
+function getInitialAdminOrders() {
+  if (typeof window === "undefined") return initialOrders;
+  const savedOrders = JSON.parse(window.localStorage.getItem("marketday-orders") || "[]") as Array<{ id: string; customer: string; address?: string; paymentMethod?: string; status: AdminOrder["status"] }>;
+  return [...initialOrders, ...savedOrders.map((order) => ({ ...order, items: 3, total: "₱763", area: order.address || "Delivery address" }))];
+}
+
 export default function AdminPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +36,7 @@ export default function AdminPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [products, setProducts] = useState(initialProducts);
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState(getInitialAdminOrders);
   const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders">("overview");
 
   useEffect(() => {
@@ -112,11 +118,19 @@ export default function AdminPage() {
   }
 
   function updateOrder(id: string, status: AdminOrder["status"]) {
-    setOrders((current) => current.map((order) => order.id === id ? { ...order, status } : order));
+    setOrders((current) => {
+      const next = current.map((order) => order.id === id ? { ...order, status } : order);
+      window.localStorage.setItem("marketday-orders", JSON.stringify(next.filter((order) => order.id.startsWith("MK-"))));
+      return next;
+    });
   }
 
   function deleteOrder(id: string) {
-    setOrders((current) => current.filter((order) => order.id !== id));
+    setOrders((current) => {
+      const next = current.filter((order) => order.id !== id);
+      window.localStorage.setItem("marketday-orders", JSON.stringify(next.filter((order) => order.id.startsWith("MK-"))));
+      return next;
+    });
   }
 
   if (checkingSession) return <main className="app"><RouteHeader active="shop" /><section className="admin-login"><div className="admin-login-card"><span className="brand-mark">m</span><p>Checking your admin session…</p></div></section><RouteFooter /></main>;

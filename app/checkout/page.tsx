@@ -29,6 +29,8 @@ export default function CheckoutPage() {
   function placeOrder() {
     if (paymentMethod === "online") return;
     const order = { id: `MK-${Date.now().toString().slice(-6)}`, address: deliveryAddress, customer: customerName, paymentMethod: "Cash on delivery", status: "Packing", createdAt: new Date().toISOString() };
+    const existing = JSON.parse(window.localStorage.getItem("marketday-orders") || "[]") as unknown[];
+    window.localStorage.setItem("marketday-orders", JSON.stringify([...existing, order]));
     window.localStorage.setItem("marketday-latest-order", JSON.stringify(order));
     setPlaced(true);
     window.setTimeout(() => router.push("/orders"), 900);
