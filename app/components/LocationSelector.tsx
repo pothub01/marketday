@@ -57,7 +57,7 @@ export default function LocationSelector() {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(map);
       const pin = leaflet.marker(center, {
-        draggable: true,
+        draggable: false,
         icon: leaflet.divIcon({ className: "delivery-pin", html: "<span></span>", iconSize: [32, 40], iconAnchor: [16, 40] }),
       }).addTo(map);
       mapInstanceRef.current = map;
@@ -97,7 +97,6 @@ export default function LocationSelector() {
           });
       };
 
-      pin.on("dragend", () => savePin(pin.getLatLng()));
     });
 
     return () => {
@@ -190,7 +189,7 @@ export default function LocationSelector() {
         {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
         {status && <p className="location-status">{status}</p>}
         <button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Set delivery address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-        {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div ref={mapRef} className="map-canvas" /><small>Drag the pin to set your exact delivery location. The map stays fixed.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
+        {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div ref={mapRef} className="map-canvas" aria-label="Map preview of selected delivery location" /><small>Search for an address or use your current location. The map preview is fixed.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
       </div>}
     </div>
   );
