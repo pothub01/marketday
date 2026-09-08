@@ -36,7 +36,15 @@ export default function LocationSelector() {
       if (disposed || !mapRef.current) return;
       const fallback: [number, number] = [14.5995, 120.9842];
       const center = parseCoordinates(coordinatesRef.current, fallback);
-      map = leaflet.map(mapRef.current, { zoomControl: true }).setView(center, coordinatesRef.current ? 16 : 13);
+      map = leaflet.map(mapRef.current, {
+        zoomControl: true,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        touchZoom: false,
+      }).setView(center, coordinatesRef.current ? 16 : 13);
       leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(map);
@@ -80,7 +88,6 @@ export default function LocationSelector() {
       };
 
       pin.on("dragend", () => savePin(pin.getLatLng()));
-      map.on("click", (event) => savePin(event.latlng));
     });
 
     return () => {
@@ -139,7 +146,7 @@ export default function LocationSelector() {
         {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
         {status && <p className="location-status">{status}</p>}
         <button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Set delivery address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-        {mapOpen && <div className="embedded-map"><div ref={mapRef} className="map-canvas" /><small>Drag the pin or tap the map to set your delivery location.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
+        {mapOpen && <div className="embedded-map"><div ref={mapRef} className="map-canvas" /><small>Drag the pin to set your exact delivery location. The map stays fixed.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
       </div>}
     </div>
   );
