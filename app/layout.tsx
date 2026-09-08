@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "leaflet/dist/leaflet.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 export const viewport = {
   width: "device-width",
