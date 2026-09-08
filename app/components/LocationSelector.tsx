@@ -34,7 +34,9 @@ export default function LocationSelector() {
         window.localStorage.setItem("marketday-coordinates", value);
         setStatus("Location synced.");
       },
-      () => setStatus("Location access was denied. Choose an area instead."),
+      (error) => setStatus(error.code === error.PERMISSION_DENIED
+        ? "Location access was denied. Allow it in your browser settings, then try again."
+        : "Could not find your location. Choose an area instead."),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
     );
   }

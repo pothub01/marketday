@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import LocationSelector from "./components/LocationSelector";
 import AuthModal from "./components/AuthModal";
+import AuthStatus from "./components/AuthStatus";
 
 type Category = "All" | "Vegetables" | "Fruits" | "Meat" | "Seafood" | "Pantry";
 type View = "shop" | "orders" | "account" | "admin";
@@ -91,7 +92,7 @@ export default function Home() {
         </nav>
         <div className="header-actions">
           <LocationSelector />
-          <button className="sign-in-link" onClick={() => setAuthOpen(true)}>Sign in</button>
+          <AuthStatus />
           <button className="cart-button" onClick={() => setCartOpen(true)}><span>Cart</span><b>{itemCount}</b></button>
         </div>
       </header>
