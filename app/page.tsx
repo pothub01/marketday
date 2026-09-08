@@ -88,7 +88,7 @@ export default function Home() {
         </nav>
         <div className="header-actions">
           <button className="location"><span>⌖</span> Quezon City <b>⌄</b></button>
-          <Link className="icon-button" href="/account" aria-label="Account">♙</Link>
+          <Link className="sign-in-link" href="/account">Sign in</Link>
           <button className="cart-button" onClick={() => setCartOpen(true)}><span>Cart</span><b>{itemCount}</b></button>
         </div>
       </header>
