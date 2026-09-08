@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import RouteHeader, { RouteFooter } from "../components/RouteHeader";
 import { supabase } from "../../lib/supabase";
@@ -25,11 +25,36 @@ export default function AdminPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
+  const [adminName, setAdminName] = useState("Admin");
+  const [checkingSession, setCheckingSession] = useState(Boolean(supabase));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [products, setProducts] = useState(initialProducts);
   const [orders, setOrders] = useState(initialOrders);
   const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders">("overview");
+
+  useEffect(() => {
+    let mounted = true;
+    if (!supabase) return () => { mounted = false; };
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      const user = data.session?.user;
+      const configuredEmails = [process.env.NEXT_PUBLIC_ADMIN_EMAIL, ...(process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(",")].filter((value): value is string => Boolean(value)).map((value) => value.trim().toLowerCase());
+      const isAdmin = user?.app_metadata?.role === "admin" || user?.user_metadata?.role === "admin" || (!!user?.email && configuredEmails.includes(user.email.toLowerCase()));
+      setLoggedIn(Boolean(isAdmin));
+      setAdminName(user?.user_metadata?.full_name || user?.user_metadata?.display_name || "Admin");
+      setCheckingSession(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setLoggedIn(Boolean(session?.user));
+      setAdminName(session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.display_name || "Admin");
+    });
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   async function signIn(event: React.FormEvent) {
     event.preventDefault();
@@ -74,6 +99,7 @@ export default function AdminPage() {
       setMessage("This account does not have admin access.");
       return;
     }
+    setAdminName(data.user.user_metadata?.full_name || data.user.user_metadata?.display_name || "Admin");
     setLoggedIn(true);
   }
 
@@ -89,9 +115,10 @@ export default function AdminPage() {
     setOrders((current) => current.map((order) => order.id === id ? { ...order, status } : order));
   }
 
+  if (checkingSession) return <main className="app"><RouteHeader active="shop" /><section className="admin-login"><div className="admin-login-card"><span className="brand-mark">m</span><p>Checking your admin session…</p></div></section><RouteFooter /></main>;
   if (!loggedIn) return <main className="app"><RouteHeader active="shop" /><section className="admin-login"><div className="admin-login-card"><span className="brand-mark">m</span><span className="kicker">Marketday admin</span><h1>Sign in to your store.</h1><p>Use the Supabase admin account configured for your Marketday workspace.</p><form onSubmit={signIn}><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="admin@yourstore.com" required /></label><label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label>{message && <div className="admin-message">{message}</div>}<button className="primary" disabled={busy}>{busy ? "Signing in…" : "Sign in to admin"} <span>→</span></button></form><Link href="/">← Back to storefront</Link></div></section><RouteFooter /></main>;
 
-  return <main className="app"><RouteHeader active="shop" /><section className="admin-page"><div className="admin-head"><div><span className="kicker">Marketday admin</span><h1>Good morning, Ana.</h1><p>Manage products, orders, and today&apos;s market operations.</p></div><div className="admin-head-actions"><span className="admin-live">● Live dashboard</span><Link className="primary" href="/">View storefront ↗</Link></div></div><div className="admin-tabs"><button className={activeTab === "overview" ? "active" : ""} onClick={() => setActiveTab("overview")}>Overview</button><button className={activeTab === "products" ? "active" : ""} onClick={() => setActiveTab("products")}>Products &amp; stock</button><button className={activeTab === "orders" ? "active" : ""} onClick={() => setActiveTab("orders")}>Orders</button></div>{activeTab === "overview" && <><div className="stats"><div><span>Today&apos;s sales</span><strong>₱28,460</strong><small className="up">↑ 14.8% vs yesterday</small></div><div><span>Orders today</span><strong>{orders.length + 39}</strong><small className="up">↑ 8 new since 9 AM</small></div><div><span>Low stock alerts</span><strong>{products.filter((product) => product.stock < 10).length}</strong><small className="warning">Needs your attention</small></div><div><span>Avg. delivery time</span><strong>31 min</strong><small className="up">↓ 6 min this week</small></div></div><div className="admin-columns"><div className="admin-panel"><div className="panel-heading"><div><span className="kicker">Live orders</span><h2>Today&apos;s orders</h2></div><button className="text-button" onClick={() => setActiveTab("orders")}>Manage →</button></div>{orders.map((order) => <AdminOrderRow key={order.id} order={order} updateOrder={updateOrder} />)}</div><div className="admin-panel"><div className="panel-heading"><div><span className="kicker">Catalog</span><h2>Stock watch</h2></div><button className="text-button" onClick={() => setActiveTab("products")}>Manage →</button></div>{products.slice(0, 3).map((product) => <StockRow key={product.id} product={product} />)}</div></div></>}{activeTab === "products" && <ProductManager products={products} updateProduct={updateProduct} toggleAvailability={toggleAvailability} />}{activeTab === "orders" && <OrderManager orders={orders} updateOrder={updateOrder} />}</section><RouteFooter /></main>;
+  return <main className="app"><RouteHeader active="shop" /><section className="admin-page"><div className="admin-head"><div><span className="kicker">Marketday admin</span><h1>Good morning, {adminName}.</h1><p>Manage products, orders, and today&apos;s market operations.</p></div><div className="admin-head-actions"><span className="admin-live">● Live dashboard</span><Link className="primary" href="/">View storefront ↗</Link></div></div><div className="admin-tabs"><button className={activeTab === "overview" ? "active" : ""} onClick={() => setActiveTab("overview")}>Overview</button><button className={activeTab === "products" ? "active" : ""} onClick={() => setActiveTab("products")}>Products &amp; stock</button><button className={activeTab === "orders" ? "active" : ""} onClick={() => setActiveTab("orders")}>Orders</button></div>{activeTab === "overview" && <><div className="stats"><div><span>Today&apos;s sales</span><strong>₱28,460</strong><small className="up">↑ 14.8% vs yesterday</small></div><div><span>Orders today</span><strong>{orders.length + 39}</strong><small className="up">↑ 8 new since 9 AM</small></div><div><span>Low stock alerts</span><strong>{products.filter((product) => product.stock < 10).length}</strong><small className="warning">Needs your attention</small></div><div><span>Avg. delivery time</span><strong>31 min</strong><small className="up">↓ 6 min this week</small></div></div><div className="admin-columns"><div className="admin-panel"><div className="panel-heading"><div><span className="kicker">Live orders</span><h2>Today&apos;s orders</h2></div><button className="text-button" onClick={() => setActiveTab("orders")}>Manage →</button></div>{orders.map((order) => <AdminOrderRow key={order.id} order={order} updateOrder={updateOrder} />)}</div><div className="admin-panel"><div className="panel-heading"><div><span className="kicker">Catalog</span><h2>Stock watch</h2></div><button className="text-button" onClick={() => setActiveTab("products")}>Manage →</button></div>{products.slice(0, 3).map((product) => <StockRow key={product.id} product={product} />)}</div></div></>}{activeTab === "products" && <ProductManager products={products} updateProduct={updateProduct} toggleAvailability={toggleAvailability} />}{activeTab === "orders" && <OrderManager orders={orders} updateOrder={updateOrder} />}</section><RouteFooter /></main>;
 }
 
 function AdminOrderRow({ order, updateOrder }: { order: AdminOrder; updateOrder: (id: string, status: AdminOrder["status"]) => void }) {
