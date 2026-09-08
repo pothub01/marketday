@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import LocationSelector from "./components/LocationSelector";
 
 type Category = "All" | "Vegetables" | "Fruits" | "Meat" | "Seafood" | "Pantry";
 type View = "shop" | "orders" | "account" | "admin";
@@ -87,7 +88,7 @@ export default function Home() {
           <Link className={view === "account" ? "active" : ""} href="/account">Account</Link>
         </nav>
         <div className="header-actions">
-          <button className="location"><span>⌖</span> Quezon City <b>⌄</b></button>
+          <LocationSelector />
           <Link className="sign-in-link" href="/account">Sign in</Link>
           <button className="cart-button" onClick={() => setCartOpen(true)}><span>Cart</span><b>{itemCount}</b></button>
         </div>
