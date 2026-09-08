@@ -28,3 +28,11 @@ The current UI includes demo catalog, cart, order tracking, account, and admin
 surfaces. Connect a database, authentication provider, payment processor, and
 delivery service before accepting real orders. Keep all secret credentials
 server-side and add them to the deployment provider’s environment settings.
+
+## Admin access
+
+Create the staff user in Supabase Authentication → Users, then either set the
+user email in Vercel as `NEXT_PUBLIC_ADMIN_EMAIL` (or the comma-separated
+`NEXT_PUBLIC_ADMIN_EMAILS`) or assign `role: "admin"` in the user metadata.
+Redeploy after changing Vercel environment variables because public variables
+are embedded during the build.

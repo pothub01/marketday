@@ -45,8 +45,16 @@ export default function AdminPage() {
       setMessage(error.message);
       return;
     }
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-    const isAdmin = data.user?.user_metadata?.role === "admin" || (adminEmail && data.user?.email === adminEmail);
+    const configuredEmails = [
+      process.env.NEXT_PUBLIC_ADMIN_EMAIL,
+      ...(process.env.NEXT_PUBLIC_ADMIN_EMAILS || "").split(","),
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.trim().toLowerCase())
+    const userEmail = data.user?.email?.trim().toLowerCase();
+    const isAdmin = data.user?.app_metadata?.role === "admin"
+      || data.user?.user_metadata?.role === "admin"
+      || (!!userEmail && configuredEmails.includes(userEmail));
     if (!isAdmin) {
       await supabase.auth.signOut();
       setMessage("This account does not have admin access.");
