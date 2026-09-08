@@ -16,6 +16,8 @@ export default function LocationSelector() {
   const [status, setStatus] = useState("");
   const [mapOpen, setMapOpen] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<import("leaflet").Map | undefined>(undefined);
+  const pinRef = useRef<import("leaflet").Marker | undefined>(undefined);
   const locationRef = useRef(location);
   const coordinatesRef = useRef(coordinates);
   const addressRef = useRef(address);
@@ -45,6 +47,12 @@ export default function LocationSelector() {
         keyboard: false,
         touchZoom: false,
       }).setView(center, coordinatesRef.current ? 16 : 13);
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
       leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(map);
@@ -52,6 +60,8 @@ export default function LocationSelector() {
         draggable: true,
         icon: leaflet.divIcon({ className: "delivery-pin", html: "<span></span>", iconSize: [32, 40], iconAnchor: [16, 40] }),
       }).addTo(map);
+      mapInstanceRef.current = map;
+      pinRef.current = pin;
       const popup = leaflet.popup({ closeButton: false, offset: [0, -34] }).setContent(addressRef.current || "Move this pin to set your delivery location.");
       pin.bindPopup(popup).openPopup();
 
@@ -93,8 +103,42 @@ export default function LocationSelector() {
     return () => {
       disposed = true;
       map?.remove();
+      mapInstanceRef.current = undefined;
+      pinRef.current = undefined;
     };
   }, [mapOpen]);
+
+  async function searchLocation(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const input = event.currentTarget.elements.namedItem("location-search");
+    if (!(input instanceof HTMLInputElement) || !input.value.trim()) return;
+    setStatus("Searching for address…");
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(input.value.trim())}`);
+      if (!response.ok) throw new Error("Search failed");
+      const results = await response.json() as Array<{ lat: string; lon: string; display_name: string }>;
+      const result = results[0];
+      if (!result || !mapInstanceRef.current || !pinRef.current) {
+        setStatus("Address not found. Try a more specific search.");
+        return;
+      }
+      const leaflet = await import("leaflet");
+      const position = leaflet.latLng(Number(result.lat), Number(result.lon));
+      pinRef.current.setLatLng(position);
+      mapInstanceRef.current.setView(position, mapInstanceRef.current.getZoom(), { animate: false });
+      setLocation(result.display_name);
+      setAddress(result.display_name);
+      setCoordinates(`${position.lat.toFixed(5)},${position.lng.toFixed(5)}`);
+      setConfirmed(false);
+      setStatus("Address found. Confirm this delivery location.");
+      window.localStorage.setItem("marketday-location", result.display_name);
+      window.localStorage.setItem("marketday-address", result.display_name);
+      window.localStorage.setItem("marketday-coordinates", `${position.lat.toFixed(5)},${position.lng.toFixed(5)}`);
+      window.localStorage.removeItem("marketday-location-confirmed");
+    } catch {
+      setStatus("Unable to search right now. Try dragging the pin instead.");
+    }
+  }
 
   function useCurrentLocation() {
     if (!navigator.geolocation) {
@@ -146,7 +190,7 @@ export default function LocationSelector() {
         {confirmed && coordinates && <div className="selected-location"><strong>Selected delivery location</strong><span>{address || location}</span><small>{coordinates}</small></div>}
         {status && <p className="location-status">{status}</p>}
         <button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "Set delivery address on map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
-        {mapOpen && <div className="embedded-map"><div ref={mapRef} className="map-canvas" /><small>Drag the pin to set your exact delivery location. The map stays fixed.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
+        {mapOpen && <div className="embedded-map"><form className="location-search" onSubmit={searchLocation}><input name="location-search" type="search" placeholder="Search delivery address" aria-label="Search delivery address" /><button type="submit">Search</button></form><div ref={mapRef} className="map-canvas" /><small>Drag the pin to set your exact delivery location. The map stays fixed.</small>{address && <p className="pinned-address">{address}</p>}{coordinates && <p className="pinned-coordinates">{coordinates}</p>}<button className="confirm-pin" onClick={confirmLocation} disabled={!coordinates}>Confirm delivery location</button></div>}
       </div>}
     </div>
   );
