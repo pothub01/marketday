@@ -54,6 +54,10 @@ export default function LocationSelector({ onConfirm }: { onConfirm?: (location:
       const marker = new maplibre.Marker({ element: markerElement, anchor: "bottom" }).setLngLat([longitude, latitude]).addTo(map);
       mapInstanceRef.current = map;
       markerRef.current = marker;
+      const mapElement = map.getContainer();
+      mapElement.style.touchAction = "none";
+      mapElement.style.overscrollBehavior = "none";
+      mapElement.addEventListener("touchmove", (event) => event.preventDefault(), { passive: false });
       map.once("load", () => map?.resize());
       map.on("click", async (event) => {
         const value = `${event.lngLat.lat.toFixed(5)},${event.lngLat.lng.toFixed(5)}`;
