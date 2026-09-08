@@ -9,6 +9,7 @@ export default function LocationSelector() {
   const [location, setLocation] = useState(() => typeof window === "undefined" ? "Quezon City" : window.localStorage.getItem("marketday-location") || "Quezon City");
   const [coordinates, setCoordinates] = useState(() => typeof window === "undefined" ? "" : window.localStorage.getItem("marketday-coordinates") || "");
   const [status, setStatus] = useState("");
+  const [mapOpen, setMapOpen] = useState(false);
 
   function selectLocation(value: string) {
     setLocation(value);
@@ -16,6 +17,7 @@ export default function LocationSelector() {
     setStatus("");
     window.localStorage.setItem("marketday-location", value);
     window.localStorage.removeItem("marketday-coordinates");
+    setMapOpen(false);
     setOpen(false);
   }
 
@@ -41,9 +43,8 @@ export default function LocationSelector() {
     );
   }
 
-  function openInMaps() {
-    const destination = coordinates || encodeURIComponent(location);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${destination}`, "_blank", "noopener,noreferrer");
+  function mapQuery() {
+    return encodeURIComponent(coordinates || `${location}, Metro Manila, Philippines`);
   }
 
   return (
@@ -56,7 +57,8 @@ export default function LocationSelector() {
         <button className="location-current" onClick={useCurrentLocation}><span>◎</span> Use my current location <b>→</b></button>
         {locations.map((item) => <button key={item} className={item === location ? "selected" : ""} onClick={() => selectLocation(item)} role="option" aria-selected={item === location}>{item}<span>{item === location ? "✓" : "→"}</span></button>)}
         {status && <p className="location-status">{status}</p>}
-        <button className="location-maps" onClick={openInMaps}>Open in Google Maps ↗</button>
+        <button className="location-maps" onClick={() => setMapOpen((value) => !value)}>{mapOpen ? "Hide map" : "View delivery map"} <span>{mapOpen ? "⌃" : "⌄"}</span></button>
+        {mapOpen && <div className="embedded-map"><iframe title={`Delivery map for ${location}`} src={`https://www.google.com/maps?q=${mapQuery()}&output=embed`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" /><small>Map powered by Google Maps</small></div>}
       </div>}
     </div>
   );
