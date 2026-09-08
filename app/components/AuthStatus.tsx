@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 
-export default function AuthStatus() {
+export default function AuthStatus({ onSignIn }: { onSignIn?: () => void }) {
   const [email, setEmail] = useState<string | null>(null);
   const [name, setName] = useState("");
 
@@ -20,7 +20,7 @@ export default function AuthStatus() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  if (!email) return <a className="sign-in-link" href="/account">Sign in</a>;
+  if (!email) return <button className="sign-in-link" onClick={onSignIn}>Sign in</button>;
 
   return <div className="auth-status"><span className="auth-avatar">{(name || email).slice(0, 1).toUpperCase()}</span><span className="auth-identity"><strong>{name || "Signed in"}</strong><small>{email}</small></span><button onClick={() => supabase?.auth.signOut()}>Sign out</button></div>;
 }

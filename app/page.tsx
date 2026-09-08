@@ -94,7 +94,7 @@ export default function Home() {
         </nav>
         <div className="header-actions">
           <LocationSelector allowMap={false} />
-          <AuthStatus />
+          <AuthStatus onSignIn={() => setAuthOpen(true)} />
           <button className="cart-button" onClick={() => setCartOpen(true)}><span>Cart</span><b>{itemCount}</b></button>
         </div>
       </header>
